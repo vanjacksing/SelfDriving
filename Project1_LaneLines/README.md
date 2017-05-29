@@ -1,53 +1,83 @@
-#**Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+# **Udacity self-driving car Nanodegree** 
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+## Finding Lane Lines on the road: Project 1
 
-Overview
+### This is descrtption of a pipeline, used to detect lane lines on images and videos
+
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+[//]: # (Image References)
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
+[image1]: ./examples/regular_image.jpg "Regular image"
+[image2]: ./examples/normalized_image.jpg "Normalized image"
+[image3]: ./examples/yellow_lane_image.jpg "Image with yellow lane"
+[image4]: ./examples/yellow_masked.jpg "Enchanced image with yellow lane"
+[image5]: ./examples/edges_simple.jpg "Image with clear lane lines"
+[image6]: ./examples/edges_tricky.jpg "Tricky to detect lane lines"
 
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
-
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
-
-
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-
-1. Describe the pipeline
-
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
-
-
-The Project
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+### 1. The pipeline
+#### Image histogram normalization
+The first step i used in my pipeline was image histogram normaliztion. This means that i made darkest pixels of an image to have brightness of 255, and darkest to 0. This is nonlinear process in RGB color space, so i used the following steps:
 
-**Step 2:** Open the code in a Jupyter Notebook
+1. Convert image to HSV color space 
+2. Extract brightness channel 
+3. Normalize it with OpenCV function **equalizeHist** 
+4. Merge channels back together 
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+This made lane lines even brighter than other parts of an image
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+![Image from camera][image1] ![Normalized image][image2]
 
-`> jupyter notebook`
+#### Yellow color detection
+Yellow lines themselves are not as bright as white lines, so i needed them to stand out on an image. This was archieved the following way:
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+1. Convert image to HSV, so than colors are in a separate channel now
+2. Set color boundaries for yellow
+3. Creare a mask for yellow color using **inRange** function
+4. Blend the mask with image from the first step, so that yellow lanes if they exist on an image are brightened
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
+![Image with yellow lane][image3] ![Yellow lane highlighted][image4]
 
+#### Convert image to grayscale
+
+This was quite simple, using helper function **grayscale**
+
+#### Applying gaussian blur to an image
+
+Although gaussian smoothing is a part of Canny edge detection algorithm, i foung out that additional smoothing helps to filter out more noise and leads to better results
+
+#### Applying Canny edge detection algorithm
+
+I decided not to use recommended 1:2 or 1:3 ratio for low/high thresholds in Canny detector. Because i did histogram normalization earlier, lane lines on my images corresponded to the brightest pixels. So, the lower threshold was 240, and higher was 250. This worked fine.
+
+![Canny simple][image5] ![Canny challanging][image6]
+
+#### Apply masking to region of interest
+
+#### Apply hough transormation
+
+Hough transformation was applied to find lines on masked Canny detector output. I uses transformation parametrs nearly the same as in lectures
+
+#### Filter the lines detected by Hough transformation
+
+Not every detected line corresponded to lane line. I
+1. First I filtered invalid lines by calculating their slope and rejecting lines with too high or too low slope. 
+2. Second I split the lines to left and right by their slope 
+3. After that calculated mean and standard deviation for each lane, and then filtered out parameters that were 1 standard deviation away from the mean as outliers. (I know that usually it is 3 std. deviations away from mean to be considered as outlier, but this was not the case)
+4. Averaged slope and intercept for each lane line and draw it on an image
+
+### 2. Potential shortcommings
+
+1. This wont't work at winter when roads are covered with snow
+2. There may be problems at night time. Can't say for sure for now. Haven't tested it yet
+3. There is visible lines jitter on resulting videos
+4. Not every road has lane lines, or they are in a good condition (especially in Russia :))
+
+### 3. Possible improvements
+
+1. Preprocess the images better, so that lines are even more visible, for example increase image contrast or blend image with itself using, for example Multiply blending mode.
+2. Use advanced filtering techniques to find true values of slope and intercept for lane lines. Someone in Slack advised to use RANSAC algorithm, but i suppose this is a bit overkill. Or maybe to use somthing like k-means clustering. Or simply use weighted average for finding mean values of slope and intercept, using line lenghts as weights.
+3. Using information from previous frames. Lanes direction is not something that is changing rapidly, so if our lines parameters distribution has, for example high deviation, we may use info from previous frames to adjust it. 
