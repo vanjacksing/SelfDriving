@@ -1,4 +1,4 @@
-#**Traffic Sign Recognition** 
+# **Traffic Sign Recognition** 
 
 ---
 
@@ -27,18 +27,18 @@ The goals / steps of this project are the following:
 [after]: ./examples/after.png "After processing"
 
 ## Rubric Points
-###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/481/view) individually and describe how I addressed each point in my implementation.  
+Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/481/view) individually and describe how I addressed each point in my implementation.  
 
 ---
-###Writeup / README
+### Writeup / README
 
-####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one. You can submit your writeup as markdown or pdf. You can use this template as a guide for writing the report. The submission includes the project code.
+#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one. You can submit your writeup as markdown or pdf. You can use this template as a guide for writing the report. The submission includes the project code.
 
 You're reading it! and here is a link to my [project code](https://github.com/vanjacksing/SelfDriving/blob/master/Project2_TrafficSigns/Traffic_Sign_Classifier.ipynb)
 
-###Data Set Summary & Exploration
+### Data Set Summary & Exploration
 
-####1. [German traffic sign dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset) was used for this project.
+#### 1. [German traffic sign dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset) was used for this project.
 
 I used the pandas library to calculate summary statistics of the traffic
 signs data set:
@@ -48,7 +48,7 @@ signs data set:
 * The shape of a traffic sign image is 32x32 pixels with 3 color channels (RGB)
 * The number of unique classes/labels in the data set is 43
 
-####2. Include an exploratory visualization of the dataset.
+#### 2. Include an exploratory visualization of the dataset.
 
 This dataset has several features:
 1. Classes are skewed: most frequent class in training dataset has 3000 objects (50 km/h speed limit) and least frequent has 270 objects (20 km/h speed limit) - 10 times difference!
@@ -58,9 +58,9 @@ This dataset has several features:
 ![Train dataset classes distribution][train_distribution]
 ![Test dataset classes distribution][test_distribution]
 
-###Design and Test a Model Architecture
+### Design and Test a Model Architecture
 
-#### Image quality
+#### 1. Image quality
 In general image quality varies greatly:
 
 ![Image variety][dataset_classes]
@@ -82,7 +82,8 @@ Images after processing look like this:
 
 
 
-####2. One of the main considerations i used in this project were multi-scale features. I tool this idea from [here](http://yann.lecun.com/exdb/publis/pdf/sermanet-ijcnn-11.pdf)
+#### 2. Architecture considerations
+One of the main considerations i used in this project were multi-scale features. I tool this idea from [here](http://yann.lecun.com/exdb/publis/pdf/sermanet-ijcnn-11.pdf)
 
 My final model consisted of the following layers:
 
@@ -108,15 +109,20 @@ My final model consisted of the following layers:
 | Dropout | Dropout layer with keep probability 0.5 to prevent overfitting |
 | Output | Fully connected layer with 43 nodes and linear activation function |
  
-####3. AdamOptimizer with learning rate 0.0003 and 30 epochs with batch size = 128 was used to train the model. Cross entropy was used as a target variable for optimizer. 
+#### 3. Training
 
-####4. In my opinion one of the most helpful techniques were:
+AdamOptimizer with learning rate 0.0003 and 30 epochs with batch size = 128 was used to train the model. Cross entropy was used as a target variable for optimizer. 
+
+#### 4. Game-changing solutions
+
+In my opinion one of the most helpful techniques were:
 
 1. Using multi-scale features as input to fully-connected layer
 2. Image enhancement with autocontrast
 3. Conversion to grayscale
 
-My final model results were:
+#### 5. Final results 
+
 * training set accuracy of 1.0
 * validation set accuracy of 0.976 
 * test set accuracy of 0.96
@@ -127,14 +133,22 @@ To improve it i added one more convolutional layer, incresed all conv layers dep
 I suppose ideal training accuracy was result of an overfitting. This may be reduced by lowering dropout probability and decreasing learning rate. But those steps may also lead to bad model convergence and stucking at local minimum. So, current solution looks fine at the moment.
  
 
-###Test a Model on New Images
+### Test a Model on New Images
 
-####1. Choose five German traffic signs found on the web and provide them in the report. For each image, discuss what quality or qualities might be difficult to classify.
+#### 1. Choose five German traffic signs found on the web and provide them in the report. For each image, discuss what quality or qualities might be difficult to classify.
 
 Here are five German traffic signs that I found on the web:
-
-![Beware of ice/snow][snow] ![Pedestrians][pedestrian] ![Yield][yield] 
-![Speed limit 60 km/h][60limit] ![Speed limit 70 km/h][70limit]
+---
+![Beware of ice/snow][snow] 
+---
+![Pedestrians][pedestrian] 
+---
+![Yield][yield] 
+---
+![Speed limit 60 km/h][60limit] 
+---
+![Speed limit 70 km/h][70limit]
+---
 
 Here are the results of the prediction:
 
@@ -150,7 +164,7 @@ The first two images were misclassified. Probably this happened due to the fact,
 
 In general accuracy on set of 9 images from web was 78% (7 of 9 correct). This may be explained: images from the web were not very representative and contained images classes, which classification accuracy was below average. More general image classed were predicted correctly.
 
-####3. Let's see top 5 probabilities for signes from the web:
+#### 2. Let's see top 5 probabilities for signes from the web:
 
 First image has class "Beware of ice/snow"
 
