@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from PIL import Image
+from PIL import ImageOps
 
 # Image shape
 IMG_SHAPE = (1280, 720)
@@ -21,8 +23,8 @@ DIR_THRESH = (0, np.pi/2)
 # Sobel absoulute axis threshold
 ASB_THRESH = (0, 255)
 # Hue and Suturation thresholds (HLS color model)
-H_THRESH = (15, 100)
-S_THRESH = (1, 255)
+H_THRESH = (20, 100)
+S_THRESH = (225, 255)
 
 # Source image points for perspective warp
 src = np.float32([[594, 450], [692, 450],  [1050, 675], [270, 675]])
@@ -106,7 +108,9 @@ def dir_threshold(img, sobel_kernel=3, thresh=DIR_THRESH):
     return binary_output
 
 def color_thresh(img, h_thresh=H_THRESH, s_thresh=S_THRESH):
-    hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+    pil_img = Image.fromarray(np.uint8(img*255))
+    equal = ImageOps.equalize(pil_img)
+    hls = cv2.cvtColor(np.array(equal), cv2.COLOR_RGB2HLS)
     H = hls[:,:,0]
     L = hls[:,:,1]
     S = hls[:,:,2]
@@ -119,7 +123,7 @@ def thresh_combined(img):
     grady = abs_sobel_thresh(img, thresh_min=20, thresh_max=100, orient='y')
     mag_binary = mag_thresh(img, mag_thresh=(70, 150))
     dir_binary = dir_threshold(img, thresh=(np.pi/8, np.pi/3))
-    clr_thresh = color_thresh(img, s_thresh = (130, 255), h_thresh=(15, 100))
+    clr_thresh = color_thresh(img, s_thresh = (220, 255), h_thresh=(15, 100))
     combined = np.zeros_like(dir_binary)
     combined[(gradx == 1) & 
              (grady == 1) & 
