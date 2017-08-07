@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from PIL import Image
 from PIL import ImageOps
+import glob
+
 
 # Image shape
 IMG_SHAPE = (1280, 720)
@@ -24,7 +26,8 @@ DIR_THRESH = (0, np.pi/2)
 ASB_THRESH = (0, 255)
 # Hue and Suturation thresholds (HLS color model)
 H_THRESH = (20, 100)
-S_THRESH = (225, 255)
+S_THRESH = (80, 255)
+L_THRESH = (175, 255)
 
 # Source image points for perspective warp
 src = np.float32([[594, 450], [692, 450],  [1050, 675], [270, 675]])
@@ -74,7 +77,7 @@ def abs_sobel_thresh(img, orient='x', thresh_min=ASB_THRESH[0], thresh_max=ASB_T
     # Return the result
     return binary_output
 
-def mag_thresh(img, sobel_kernel=3, mag_thresh=MAG_THRESH):
+def mag_thresh(img, sobel_kernel=5, mag_thresh=MAG_THRESH):
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # Take both Sobel x and y gradients
@@ -107,28 +110,67 @@ def dir_threshold(img, sobel_kernel=3, thresh=DIR_THRESH):
     # Return the binary image
     return binary_output
 
-def color_thresh(img, h_thresh=H_THRESH, s_thresh=S_THRESH):
-    pil_img = Image.fromarray(np.uint8(img*255))
-    equal = ImageOps.equalize(pil_img)
-    hls = cv2.cvtColor(np.array(equal), cv2.COLOR_RGB2HLS)
+def normalize_rgb(img):
+    """
+    Normalize RGB image histogram
+    """
+    # Convert image to HSV
+    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    # Split image channels
+    channels = cv2.split(hsv)
+    # Normalize brightness channel of an image
+    normalized = cv2.equalizeHist(channels[2])
+    # Merge normalized channel back to the image
+    merged = cv2.merge([channels[0], channels[1], normalized])
+    # Convert image back to BGR
+    merged_rgb = cv2. cvtColor(merged, cv2.COLOR_HSV2RGB)
+    return merged_rgb
+	
+def color_thresh(img, h_thresh=H_THRESH, s_thresh=S_THRESH, l_thresh = L_THRESH):
+    norm = normalize_rgb(img)
+    hls = cv2.cvtColor(norm, cv2.COLOR_RGB2HLS)
     H = hls[:,:,0]
     L = hls[:,:,1]
     S = hls[:,:,2]
     binary = np.zeros_like(H)
-    binary[((H>=h_thresh[0]) & (H<=h_thresh[1])) & ((S>=s_thresh[0]) & (S<=s_thresh[1]))] = 1
+    binary[((H>=h_thresh[0]) & (H<=h_thresh[1])) & 
+		((S>=s_thresh[0]) & (S<=s_thresh[1])) & 
+		(L >= l_thresh[0] & (L <= l_thresh[1]))] = 1
     return binary
 
 def thresh_combined(img):
     gradx = abs_sobel_thresh(img, thresh_min=20, thresh_max=100)
     grady = abs_sobel_thresh(img, thresh_min=20, thresh_max=100, orient='y')
-    mag_binary = mag_thresh(img, mag_thresh=(70, 150))
-    dir_binary = dir_threshold(img, thresh=(np.pi/8, np.pi/3))
+    #mag_binary = mag_thresh(img, mag_thresh=(70, 150))
+    #dir_binary = dir_threshold(img, thresh=(np.pi/8, np.pi/3))
     clr_thresh = color_thresh(img, s_thresh = (220, 255), h_thresh=(15, 100))
-    combined = np.zeros_like(dir_binary)
-    combined[(gradx == 1) & 
-             (grady == 1) & 
-             (dir_binary == 1) | 
-             (mag_binary == 1) | 
-             (clr_thresh == 1) |
-             (gradx == 1)] = 1
+    combined = np.zeros_like(gradx)
+    combined[((gradx == 1) & 
+             (grady == 1)) | 
+            # (dir_binary == 1) | 
+            # (mag_binary == 1) | 
+             (clr_thresh == 1) ] = 1
+            # (gradx == 1)
+		
     return combined
+	
+class Pipeline:
+	
+	def __init__(self, calibration_folder):
+		images = glob.glob(calibration_folder + '/*.jpg')
+		ret, mtx, dist, rvecs, tvecs = get_camera_calibration(images)
+		M, Minv = get_perspective_transform_matrix()
+		self.M = M
+		self.Minv = Minv
+		self.ret = ret
+		self.mtx = mtx
+		self. dist = dist
+		self.rvecs = rvecs
+		self.tvecs = tvecs
+			
+	
+	def process(self, img):
+		undist = cv2.undistort(img, self.mtx, self.dist, None, self.mtx)
+		thr = thresh_combined(undist)
+		warped = cv2.warpPerspective(thr, self.M, (IMG_SHAPE[0], IMG_SHAPE[1]))
+		return warped
