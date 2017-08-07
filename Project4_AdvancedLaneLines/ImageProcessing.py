@@ -122,29 +122,38 @@ def normalize_rgb(img):
     normalized = cv2.equalizeHist(channels[2])
     # Merge normalized channel back to the image
     merged = cv2.merge([channels[0], channels[1], normalized])
-    # Convert image back to BGR
+    # Convert image back to RGB
     merged_rgb = cv2. cvtColor(merged, cv2.COLOR_HSV2RGB)
     return merged_rgb
 	
 def color_thresh(img, h_thresh=H_THRESH, s_thresh=S_THRESH, l_thresh = L_THRESH):
+	# Normalize input image histogram
     norm = normalize_rgb(img)
+    # Convert image to HLS
     hls = cv2.cvtColor(norm, cv2.COLOR_RGB2HLS)
     H = hls[:,:,0]
     L = hls[:,:,1]
     S = hls[:,:,2]
     binary = np.zeros_like(H)
+    # Create thresholded binary image
     binary[((H>=h_thresh[0]) & (H<=h_thresh[1])) & 
 		((S>=s_thresh[0]) & (S<=s_thresh[1])) & 
 		(L >= l_thresh[0] & (L <= l_thresh[1]))] = 1
     return binary
 
 def thresh_combined(img):
+	# Calculate thresholded Sobel binary image for X axis
     gradx = abs_sobel_thresh(img, thresh_min=20, thresh_max=100)
+    # Calculate thresholded Sobel binary image for Y axis
     grady = abs_sobel_thresh(img, thresh_min=20, thresh_max=100, orient='y')
+    # Calculate thresholded Sobel magnitude binary image
     #mag_binary = mag_thresh(img, mag_thresh=(70, 150))
+    # Calculate thresholded Sobel direction binary image
     #dir_binary = dir_threshold(img, thresh=(np.pi/8, np.pi/3))
-    clr_thresh = color_thresh(img, s_thresh = (220, 255), h_thresh=(15, 100))
+    # Calculate thresholded binary image, based on HLS channels
+    clr_thresh = color_thresh(img)
     combined = np.zeros_like(gradx)
+    # Combine all thresholded images
     combined[((gradx == 1) & 
              (grady == 1)) | 
             # (dir_binary == 1) | 
@@ -155,7 +164,13 @@ def thresh_combined(img):
     return combined
 	
 class Pipeline:
-	
+	"""
+	A wrapped class for all processing pipeline.
+	Requires name of folder with calibration images for initialization
+	Class initializer calculates distortion correction coefficients
+	reverse and direct perspective transorm matrix, and assignes those to
+	class instance variables
+	"""
 	def __init__(self, calibration_folder):
 		images = glob.glob(calibration_folder + '/*.jpg')
 		ret, mtx, dist, rvecs, tvecs = get_camera_calibration(images)
@@ -170,6 +185,10 @@ class Pipeline:
 			
 	
 	def process(self, img):
+		"""
+		Processing function, that first undistorts images, then creates thresholded image
+		and after tha wraps it, all using class instance parameters calculated in __init__ function
+		"""
 		undist = cv2.undistort(img, self.mtx, self.dist, None, self.mtx)
 		thr = thresh_combined(undist)
 		warped = cv2.warpPerspective(thr, self.M, (IMG_SHAPE[0], IMG_SHAPE[1]))
