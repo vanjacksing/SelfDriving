@@ -100,8 +100,8 @@ class Lane:
         """
         Updates current frame
         """
-        self.frame = image
-        self.warped = self.pipe.process(image)
+        self.frame =  self.pipe.undistort(image)
+        self.warped = self.pipe.process(self.frame)
     
     def detect_line(self, is_left=True):
         

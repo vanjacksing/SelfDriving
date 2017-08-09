@@ -183,13 +183,14 @@ class Pipeline:
 		self.rvecs = rvecs
 		self.tvecs = tvecs
 			
-	
+	def undistort(self, img):
+		return cv2.undistort(img, self.mtx, self.dist, None, self.mtx)
+
 	def process(self, img):
 		"""
 		Processing function, that first undistorts images, then creates thresholded image
 		and after tha wraps it, all using class instance parameters calculated in __init__ function
 		"""
-		undist = cv2.undistort(img, self.mtx, self.dist, None, self.mtx)
-		thr = thresh_combined(undist)
+		thr = thresh_combined(img)
 		warped = cv2.warpPerspective(thr, self.M, (IMG_SHAPE[0], IMG_SHAPE[1]))
 		return warped
